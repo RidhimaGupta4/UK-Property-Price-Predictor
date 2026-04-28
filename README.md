@@ -6,7 +6,7 @@
 
 ## 🔴 Live Dashboard
 
-[![View Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-View%20Now-1d4ed8?style=for-the-badge)](https://YOUR_USERNAME.github.io/uk-property-price-predictor/)
+[![View Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-View%20Now-1d4ed8?style=for-the-badge)](https://RidhimaGupta4.github.io/uk-property-price-predictor/)
 
 ---
 
