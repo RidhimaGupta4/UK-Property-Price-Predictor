@@ -2,8 +2,6 @@
 
 > Machine learning pipeline to predict UK residential property prices using Land Registry transaction data, ONS House Price Index, Ofsted school ratings, EPC energy efficiency ratings, and commute time features. Gradient Boosting achieves **R² = 0.987** and **MAPE = 5.83%** on a 20% holdout test set.
 
-![Actual vs Predicted](outputs/04_actual_vs_predicted.png)
-
 ---
 
 ## 🔴 Live Dashboard
