@@ -195,7 +195,7 @@ All 12 regions achieve **6.0–6.8% MAE** — consistent accuracy regardless of 
 ### Option A — Use Real Land Registry Data (recommended)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/uk-property-price-predictor.git
+git clone https://github.com/RidhimaGupta4/UK-Property-Price-Predictor.git
 cd uk-property-price-predictor
 pip install -r requirements.txt
 
