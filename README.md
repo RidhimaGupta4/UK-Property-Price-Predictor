@@ -380,14 +380,13 @@ The `00_fetch_real_data.py` script downloads and processes the Land Registry CSV
 
 ## 📄 Licence
 
-MIT — free to use, adapt, and extend.
-
+MIT — free to use and adapt
 ---
 
 ## 🙋 Author
 
-Built as a UK data scientist portfolio project.
+Built as a UK data analyst / data scientist portfolio project.
 
-**Connect:** [LinkedIn](https://linkedin.com) · [GitHub](https://github.com) · [Portfolio](https://yourportfolio.com)
+**Connect:** [LinkedIn](https://www.linkedin.com/in/ridhimagupta1623/) · [GitHub](https://github.com/RidhimaGupta4) 
 
-> If this project helped you, please ⭐ star the repo.
+> If this project helped you, please ⭐ star the repo — it helps others find it.
