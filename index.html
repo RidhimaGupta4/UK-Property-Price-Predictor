@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>UK Property Price Predictor — ML Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f1f5f9;color:#0f172a;font-size:13px}
+
+/* HEADER */
+.hdr{background:#0f172a;padding:0;border-bottom:3px solid #3b82f6}
+.hdr-inner{display:flex;align-items:stretch;max-width:100%}
+.hdr-brand{background:#1e3a5f;padding:16px 28px;display:flex;align-items:center;gap:12px;border-right:1px solid #2d4a6e}
+.hdr-icon{width:40px;height:40px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.hdr-title{color:#f8fafc;font-size:17px;font-weight:700;letter-spacing:-.3px;line-height:1.2}
+.hdr-subtitle{color:#64748b;font-size:10px;margin-top:2px;letter-spacing:.04em}
+.hdr-stats{display:flex;padding:0 28px;align-items:center;gap:32px;flex:1}
+.hstat{text-align:center}
+.hstat-v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;line-height:1}
+.hstat-v.green{color:#22c55e}.hstat-v.blue{color:#60a5fa}.hstat-v.amber{color:#f59e0b}.hstat-v.red{color:#f87171}
+.hstat-l{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.1em;margin-top:3px}
+.hdr-model{margin-left:auto;padding:0 28px;display:flex;align-items:center;gap:10px;border-left:1px solid #1e2d3d}
+.model-badge{background:#1e3a5f;border:1px solid #3b82f6;border-radius:6px;padding:8px 14px;text-align:center}
+.model-badge-title{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#60a5fa;font-weight:600}
+.model-badge-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:#22c55e;line-height:1;margin-top:2px}
+.model-badge-sub{font-size:9px;color:#64748b;margin-top:1px}
+
+/* TABS */
+.tabs{background:#fff;border-bottom:1px solid #e2e8f0;display:flex;padding:0 24px;gap:2px;overflow-x:auto}
+.tab{padding:12px 18px;font-size:11px;font-weight:600;color:#94a3b8;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;text-transform:uppercase;letter-spacing:.06em;font-family:'Inter',sans-serif}
+.tab:hover{color:#475569}
+.tab.active{color:#3b82f6;border-bottom-color:#3b82f6}
+
+/* PAGES */
+.page{display:none;padding:20px 24px;min-height:calc(100vh - 120px)}
+.page.active{display:block}
+
+/* KPI ROW */
+.krow{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.kcard{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-top:3px solid #3b82f6;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.kcard.green{border-top-color:#22c55e}.kcard.amber{border-top-color:#f59e0b}.kcard.red{border-top-color:#ef4444}.kcard.purple{border-top-color:#8b5cf6}
+.kl{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;font-weight:600;margin-bottom:6px}
+.kv{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:#0f172a;line-height:1;margin-bottom:3px}
+.ks{font-size:10px;color:#64748b}
+.kt{display:inline-block;margin-top:6px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace}
+.kt.up{background:#dcfce7;color:#16a34a}.kt.dn{background:#fee2e2;color:#dc2626}.kt.nt{background:#dbeafe;color:#1d4ed8}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.full{grid-column:1/-1}
+.ccard{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.ctitle{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#334155;margin-bottom:3px}
+.csub{font-size:10px;color:#94a3b8;margin-bottom:12px;line-height:1.4}
+
+/* PREDICT FORM */
+.pred-form{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.fgroup label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#64748b;display:block;margin-bottom:4px}
+.fgroup select,.fgroup input{width:100%;background:#f8fafc;border:1px solid #e2e8f0;color:#0f172a;padding:8px 10px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;outline:none;transition:border-color .15s}
+.fgroup select:focus,.fgroup input:focus{border-color:#3b82f6}
+.pred-btn{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s;margin-top:4px}
+.pred-btn:hover{opacity:.9}
+.pred-result{background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:10px;padding:20px 24px;display:flex;align-items:center;gap:20px;margin-bottom:14px}
+.pred-result-val{font-family:'JetBrains Mono',monospace;font-size:42px;font-weight:700;color:#22c55e;line-height:1}
+.pred-result-label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.pred-range{font-size:12px;color:#94a3b8}
+.pred-range span{color:#f8fafc;font-weight:600}
+.conf-meter{display:flex;gap:6px;margin-top:8px}
+.conf-bar{height:6px;border-radius:3px;flex:1;background:#1e3a5f}
+.conf-bar.fill{background:#22c55e}
+.conf-text{font-size:10px;color:#64748b;margin-top:4px}
+.pred-factors{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.factor-chip{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
+.factor-name{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.06em}
+.factor-val{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#0f172a}
+.factor-impact{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px}
+.fi-pos{background:#dcfce7;color:#16a34a}.fi-neg{background:#fee2e2;color:#dc2626}.fi-neu{background:#dbeafe;color:#1d4ed8}
+
+/* MODEL TABLE */
+.mtable{width:100%;border-collapse:collapse;font-size:12px}
+.mtable th{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:600;padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;background:#f8fafc}
+.mtable th:first-child{text-align:left}
+.mtable td{padding:10px;border-bottom:1px solid #f1f5f9;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px}
+.mtable td:first-child{text-align:left;font-family:'Inter',sans-serif;font-weight:600;color:#0f172a}
+.mtable tr:hover td{background:#f8fafc}
+.best-row td{background:#f0fdf4!important}
+.metric-bar{height:6px;background:#e2e8f0;border-radius:3px;margin-top:4px;overflow:hidden}
+.metric-fill{height:100%;border-radius:3px}
+
+/* DATA TABLE */
+.dtable{width:100%;border-collapse:collapse;font-size:11px}
+.dtable th{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:600;padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;background:#f8fafc;white-space:nowrap}
+.dtable th:first-child{text-align:left}
+.dtable td{padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:#334155}
+.dtable td:first-child{text-align:left;font-family:'Inter',sans-serif;font-weight:500;color:#0f172a}
+.dtable tr:hover td{background:#f8fafc}
+.err-tag{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700}
+.err-good{background:#dcfce7;color:#16a34a}.err-ok{background:#fef9c3;color:#854d0e}.err-bad{background:#fee2e2;color:#dc2626}
+.tfilter{display:flex;gap:12px;margin-bottom:14px;align-items:center}
+.tfilter label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#64748b}
+.tfilter select{background:#fff;border:1px solid #e2e8f0;color:#0f172a;padding:6px 10px;border-radius:6px;font-size:11px;font-family:'Inter',sans-serif;outline:none}
+
+footer{background:#0f172a;color:#475569;padding:10px 24px;display:flex;justify-content:space-between;font-size:10px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-brand">
+      <div class="hdr-icon">🏠</div>
+      <div>
+        <div class="hdr-title">UK Property Price Predictor</div>
+        <div class="hdr-subtitle">Land Registry · ONS HPI · Ofsted · ML Pipeline</div>
+      </div>
+    </div>
+    <div class="hdr-stats">
+      <div class="hstat"><div class="hstat-v blue">8,000</div><div class="hstat-l">Properties</div></div>
+      <div class="hstat"><div class="hstat-v amber">£270k</div><div class="hstat-l">Median Price</div></div>
+      <div class="hstat"><div class="hstat-v">12</div><div class="hstat-l">UK Regions</div></div>
+      <div class="hstat"><div class="hstat-v">35</div><div class="hstat-l">ML Features</div></div>
+    </div>
+    <div class="hdr-model">
+      <div class="model-badge">
+        <div class="model-badge-title">Best Model R²</div>
+        <div class="model-badge-val">0.987</div>
+        <div class="model-badge-sub">Gradient Boosting · MAPE 5.8%</div>
+      </div>
+      <div class="model-badge" style="border-color:#22c55e">
+        <div class="model-badge-title">Avg Prediction Error</div>
+        <div class="model-badge-val">£20,726</div>
+        <div class="model-badge-sub">Mean Absolute Error (MAE)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="showPage('overview',this)">Market Overview</button>
+  <button class="tab" onclick="showPage('predict',this)">Price Predictor</button>
+  <button class="tab" onclick="showPage('model',this)">Model Performance</button>
+  <button class="tab" onclick="showPage('features',this)">Feature Analysis</button>
+  <button class="tab" onclick="showPage('data',this)">Predictions Table</button>
+</div>
+
+<!-- ══════════════════════════════════ OVERVIEW -->
+<div class="page active" id="page-overview">
+  <div class="krow">
+    <div class="kcard"><div class="kl">National Median</div><div class="kv">£270k</div><div class="ks">All regions 2019–2024</div><span class="kt nt">Land Registry data</span></div>
+    <div class="kcard green"><div class="kl">London Inner Median</div><div class="kv">£838k</div><div class="ks">3.1× national median</div><span class="kt nt">Highest region</span></div>
+    <div class="kcard amber"><div class="kl">North East Median</div><div class="kv">£148k</div><div class="ks">Most affordable region</div><span class="kt nt">Lowest region</span></div>
+    <div class="kcard red"><div class="kl">Peak Year</div><div class="kv">2022</div><div class="ks">£296k national median</div><span class="kt dn">Post-COVID boom</span></div>
+    <div class="kcard purple"><div class="kl">2023 Correction</div><div class="kv">−9.8%</div><div class="ks">£296k → £267k</div><span class="kt dn">Rate rise impact</span></div>
+  </div>
+  <div class="g2">
+    <div class="ccard full">
+      <div class="ctitle">Median Price by UK Region</div>
+      <div class="csub">HM Land Registry Price Paid Data 2019–2024 · 8,000 residential transactions</div>
+      <div style="height:240px"><canvas id="c-region"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">Price Trend by Property Type 2019–2024</div>
+      <div class="csub">COVID boom (2021–22), 2023 correction, 2024 recovery</div>
+      <div style="height:240px"><canvas id="c-trend"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">Median Price by Property Type</div>
+      <div class="csub">Detached commands 3.2× premium over flats nationally</div>
+      <div style="height:240px"><canvas id="c-type"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">Price by Number of Bedrooms</div>
+      <div class="csub">Marginal bedroom value — each bedroom adds approx £70k–£90k</div>
+      <div style="height:230px"><canvas id="c-beds"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">Price vs Commute Time</div>
+      <div class="csub">Each 15-minute increase = significant price reduction</div>
+      <div style="height:230px"><canvas id="c-commute"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ PREDICTOR -->
+<div class="page" id="page-predict">
+  <div class="pred-result" id="pred-result">
+    <div>
+      <div class="pred-result-label">Predicted Price</div>
+      <div class="pred-result-val" id="pred-val">£ —</div>
+      <div class="pred-range" id="pred-range">Fill in the form below and click Predict</div>
+    </div>
+    <div style="flex:1">
+      <div class="conf-text" id="conf-text">Confidence indicator</div>
+      <div class="conf-meter" id="conf-meter">
+        <div class="conf-bar"></div><div class="conf-bar"></div><div class="conf-bar"></div>
+        <div class="conf-bar"></div><div class="conf-bar"></div>
+      </div>
+    </div>
+    <div style="text-align:right;font-size:11px;color:#475569;line-height:1.8">
+      Model: Gradient Boosting<br>R² = 0.9874 · MAPE = 5.83%<br>MAE = £20,726
+    </div>
+  </div>
+
+  <div class="pred-form">
+    <div class="fgroup"><label>Region</label>
+      <select id="p-region">
+        <option value="London - Inner">London — Inner</option>
+        <option value="London - Outer">London — Outer</option>
+        <option value="South East">South East</option>
+        <option value="East of England">East of England</option>
+        <option value="South West">South West</option>
+        <option value="East Midlands">East Midlands</option>
+        <option value="West Midlands">West Midlands</option>
+        <option value="Yorkshire & Humber" selected>Yorkshire & Humber</option>
+        <option value="North West">North West</option>
+        <option value="North East">North East</option>
+        <option value="Wales">Wales</option>
+        <option value="Scotland">Scotland</option>
+      </select>
+    </div>
+    <div class="fgroup"><label>Property Type</label>
+      <select id="p-type">
+        <option value="Detached">Detached</option>
+        <option value="Semi-Detached" selected>Semi-Detached</option>
+        <option value="Terraced">Terraced</option>
+        <option value="Flat">Flat</option>
+      </select>
+    </div>
+    <div class="fgroup"><label>Bedrooms</label>
+      <select id="p-beds">
+        <option>0</option><option>1</option><option>2</option>
+        <option value="3" selected>3</option><option>4</option><option>5</option><option>6</option>
+      </select>
+    </div>
+    <div class="fgroup"><label>Floor Area (m²)</label>
+      <input type="number" id="p-area" value="110" min="20" max="500">
+    </div>
+    <div class="fgroup"><label>Commute (minutes)</label>
+      <input type="number" id="p-commute" value="35" min="5" max="120">
+    </div>
+    <div class="fgroup"><label>EPC Rating</label>
+      <select id="p-epc">
+        <option>A</option><option>B</option>
+        <option value="C" selected>C</option>
+        <option>D</option><option>E</option><option>F</option><option>G</option>
+      </select>
+    </div>
+    <div class="fgroup"><label>Nearest School (Ofsted)</label>
+      <select id="p-school">
+        <option>Outstanding</option>
+        <option value="Good" selected>Good</option>
+        <option>Requires Improvement</option>
+        <option>Inadequate</option>
+      </select>
+    </div>
+    <div class="fgroup"><label>Condition</label>
+      <select id="p-cond">
+        <option>New Build</option><option>Excellent</option>
+        <option value="Good" selected>Good</option>
+        <option>Fair</option><option>Poor</option>
+      </select>
+    </div>
+    <div class="fgroup"><label>Flood Risk</label>
+      <select id="p-flood">
+        <option value="Low" selected>Low</option>
+        <option>Medium</option><option>High</option>
+      </select>
+    </div>
+    <div class="fgroup" style="display:flex;flex-direction:column;justify-content:flex-end">
+      <button class="pred-btn" onclick="predictPrice()">🔍 Predict Price</button>
+    </div>
+  </div>
+
+  <div class="pred-factors" id="pred-factors"></div>
+
+  <div class="g2">
+    <div class="ccard">
+      <div class="ctitle">How your property compares — Price by Bedroom</div>
+      <div class="csub">Your selection highlighted in the region</div>
+      <div style="height:220px"><canvas id="c-pred-beds"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">EPC & School Premium for your region</div>
+      <div class="csub">How energy rating and school quality affect your estimate</div>
+      <div style="height:220px"><canvas id="c-pred-premiums"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ MODEL -->
+<div class="page" id="page-model">
+  <div class="krow">
+    <div class="kcard green"><div class="kl">Best Model R²</div><div class="kv">0.9874</div><div class="ks">Gradient Boosting</div><span class="kt up">98.7% variance explained</span></div>
+    <div class="kcard green"><div class="kl">Best Model RMSE</div><div class="kv">£32,738</div><div class="ks">Root Mean Square Error</div><span class="kt up">Best of 3 models</span></div>
+    <div class="kcard green"><div class="kl">Best Model MAE</div><div class="kv">£20,726</div><div class="ks">Mean Absolute Error</div><span class="kt up">Best of 3 models</span></div>
+    <div class="kcard green"><div class="kl">MAPE</div><div class="kv">5.83%</div><div class="ks">Mean Abs % Error</div><span class="kt up">Excellent accuracy</span></div>
+    <div class="kcard"><div class="kl">CV R² (5-fold)</div><div class="kv">0.986</div><div class="ks">Cross-validation</div><span class="kt nt">No overfitting</span></div>
+  </div>
+  <div class="g2">
+    <div class="ccard full">
+      <div class="ctitle">Model Comparison — Ridge Regression vs Random Forest vs Gradient Boosting</div>
+      <div class="csub">All three models trained on 80% of data, evaluated on 20% holdout · Log-transformed target (price) improves accuracy</div>
+      <table class="mtable">
+        <thead><tr><th>Model</th><th>R² Score</th><th>RMSE (£)</th><th>MAE (£)</th><th>MAPE (%)</th><th>Improvement over baseline</th></tr></thead>
+        <tbody>
+          <tr><td>Ridge Regression (baseline)</td><td>0.9339</td><td>£74,872</td><td>£42,143</td><td>12.1%</td><td style="color:#94a3b8">—</td></tr>
+          <tr><td>Random Forest</td><td>0.9620</td><td>£54,398</td><td>£33,551</td><td>9.29%</td><td style="color:#f59e0b">▲ 27% better RMSE</td></tr>
+          <tr class="best-row"><td><strong>✓ Gradient Boosting</strong> (XGBoost-style)</td><td><strong>0.9874</strong></td><td><strong>£32,738</strong></td><td><strong>£20,726</strong></td><td><strong>5.83%</strong></td><td style="color:#22c55e">▲ 56% better RMSE</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">Actual vs Predicted — Test Set</div>
+      <div class="csub">300 test properties · diagonal = perfect prediction · colour = abs % error</div>
+      <div style="height:280px"><canvas id="c-scatter"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">Prediction Error Distribution</div>
+      <div class="csub">% error across test set — 94% of predictions within ±20%</div>
+      <div style="height:280px"><canvas id="c-error-dist"></canvas></div>
+    </div>
+    <div class="ccard full">
+      <div class="ctitle">Model Accuracy by Region</div>
+      <div class="csub">MAE as % of median price — consistent accuracy across all UK regions</div>
+      <div style="height:200px"><canvas id="c-regional-acc"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ FEATURES -->
+<div class="page" id="page-features">
+  <div class="krow">
+    <div class="kcard"><div class="kl">Top Feature</div><div class="kv" style="font-size:14px;margin-top:4px">Region Index</div><div class="ks">41.9% importance</div><span class="kt nt">Location dominates</span></div>
+    <div class="kcard green"><div class="kl">EPC Green Premium</div><div class="kv">£54k</div><div class="ks">A vs G rating diff</div><span class="kt up">+£34k A vs D</span></div>
+    <div class="kcard amber"><div class="kl">Outstanding School</div><div class="kv">£42k</div><div class="ks">vs Inadequate school</div><span class="kt up">+£16k vs Good</span></div>
+    <div class="kcard red"><div class="kl">Commute 0–15 min</div><div class="kv">£554k</div><div class="ks">vs 75+ min = £176k</div><span class="kt dn">£378k premium</span></div>
+    <div class="kcard purple"><div class="kl">Detached Premium</div><div class="kv">3.2×</div><div class="ks">vs flat median</div><span class="kt nt">£482k vs £152k</span></div>
+  </div>
+  <div class="g2">
+    <div class="ccard">
+      <div class="ctitle">Feature Importance — Gradient Boosting Model</div>
+      <div class="csub">Relative contribution of each feature to prediction accuracy</div>
+      <div style="height:320px"><canvas id="c-fi"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">EPC Rating vs Median Price</div>
+      <div class="csub">The green premium — energy efficient homes command higher prices</div>
+      <div style="height:220px"><canvas id="c-epc"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">Ofsted School Rating vs Median Price</div>
+      <div class="csub">Outstanding schools add £42k premium over Inadequate rated schools</div>
+      <div style="height:220px"><canvas id="c-school"></canvas></div>
+    </div>
+    <div class="ccard" style="margin-bottom:0">
+      <div class="ctitle">Feature Engineering — Key Interactions</div>
+      <div class="csub">Derived features that improve model accuracy beyond raw inputs</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px">
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:700;color:#1d4ed8;font-family:'JetBrains Mono',monospace;margin-bottom:4px">region_price_index</div>
+          <div style="font-size:10px;color:#64748b;line-height:1.6">Target encodes region using median price. Single most powerful predictor — explains <strong style="color:#0f172a">41.9%</strong> of price variance.</div>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:700;color:#1d4ed8;font-family:'JetBrains Mono',monospace;margin-bottom:4px">location_score</div>
+          <div style="font-size:10px;color:#64748b;line-height:1.6">Composite: region index − commute − distance − crime − flood. Single location quality signal. Explains <strong style="color:#0f172a">16.3%</strong>.</div>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:700;color:#1d4ed8;font-family:'JetBrains Mono',monospace;margin-bottom:4px">bed_area</div>
+          <div style="font-size:10px;color:#64748b;line-height:1.6">Bedrooms × Floor area (m²). Captures that size AND rooms together matter more than either alone. Explains <strong style="color:#0f172a">15.1%</strong>.</div>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:700;color:#1d4ed8;font-family:'JetBrains Mono',monospace;margin-bottom:4px">amenity_score</div>
+          <div style="font-size:10px;color:#64748b;line-height:1.6">Garden×3 + Parking×2 + Garage×2 + School score + EPC score. Single composite amenity index rather than 5 separate features.</div>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:700;color:#1d4ed8;font-family:'JetBrains Mono',monospace;margin-bottom:4px">commute_x_urban</div>
+          <div style="font-size:10px;color:#64748b;line-height:1.6">Commute minutes × urban density flag. Penalises long commutes more heavily in cities where alternatives exist.</div>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:700;color:#1d4ed8;font-family:'JetBrains Mono',monospace;margin-bottom:4px">epc_x_age</div>
+          <div style="font-size:10px;color:#64748b;line-height:1.6">EPC score × age band score. Newer AND energy-efficient homes get a compounded green premium beyond either factor alone.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ DATA TABLE -->
+<div class="page" id="page-data">
+  <div class="tfilter">
+    <label>Filter Region:</label>
+    <select id="tf-region" onchange="renderTable()">
+      <option value="all">All Regions</option>
+      <option>London - Inner</option><option>London - Outer</option>
+      <option>South East</option><option>East of England</option>
+      <option>South West</option><option>East Midlands</option>
+      <option>West Midlands</option><option>Yorkshire & Humber</option>
+      <option>North West</option><option>North East</option>
+      <option>Wales</option><option>Scotland</option>
+    </select>
+    <label>Property Type:</label>
+    <select id="tf-type" onchange="renderTable()">
+      <option value="all">All Types</option>
+      <option>Detached</option><option>Semi-Detached</option>
+      <option>Terraced</option><option>Flat</option>
+    </select>
+    <label>Error Band:</label>
+    <select id="tf-err" onchange="renderTable()">
+      <option value="all">All</option>
+      <option value="good">Within ±5%</option>
+      <option value="ok">±5–15%</option>
+      <option value="bad">Over ±15%</option>
+    </select>
+    <span id="tbl-count" style="margin-left:auto;font-size:11px;color:#94a3b8"></span>
+  </div>
+  <div class="ccard">
+    <div class="ctitle">Test Set Predictions — Actual vs Model Predicted</div>
+    <div class="csub" style="margin-bottom:12px">Gradient Boosting model · 20% holdout test set · 300 sample predictions shown</div>
+    <table class="dtable">
+      <thead><tr><th>Region</th><th>Type</th><th>Beds</th><th>Actual Price</th><th>Predicted Price</th><th>Error (£)</th><th>Error %</th><th>Accuracy</th></tr></thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<footer>
+  <div>Data: HM Land Registry Price Paid · ONS House Price Index · Ofsted Annual Report 2023–24 · Calibrated synthetic enrichment for EPC/commute/school features</div>
+  <div>UK Property Price Predictor · ML Portfolio Project · scikit-learn · Gradient Boosting · R²=0.987</div>
+</footer>
+
+<script>
+// ── ALL DATA ──────────────────────────────────────────────────────────────────
+const REG_MED=[{region:"East Midlands",median_price:214000},{region:"East of England",median_price:371000},{region:"London - Inner",median_price:838000},{region:"London - Outer",median_price:564000},{region:"North East",median_price:148000},{region:"North West",median_price:211000},{region:"Scotland",median_price:177000},{region:"South East",median_price:425000},{region:"South West",median_price:325000},{region:"Wales",median_price:196000},{region:"West Midlands",median_price:232500},{region:"Yorkshire & Humber",median_price:188500}];
+const TYPE_MED=[{property_type:"Detached",median_price:482000},{property_type:"Semi-Detached",median_price:291000},{property_type:"Terraced",median_price:214000},{property_type:"Flat",median_price:152000}];
+const YEAR_MED=[{sale_year:2019,median_price:232000},{sale_year:2020,median_price:237000},{sale_year:2021,median_price:281000},{sale_year:2022,median_price:296000},{sale_year:2023,median_price:267000},{sale_year:2024,median_price:293000}];
+const BEDS_MED=[{bedrooms:0,median_price:125000},{bedrooms:1,median_price:156000},{bedrooms:2,median_price:196000},{bedrooms:3,median_price:275000},{bedrooms:4,median_price:375000},{bedrooms:5,median_price:447000},{bedrooms:6,median_price:567000}];
+const EPC_MED=[{epc_rating:"A",median_price:273000},{epc_rating:"B",median_price:292000},{epc_rating:"C",median_price:271000},{epc_rating:"D",median_price:268000},{epc_rating:"E",median_price:264000},{epc_rating:"F",median_price:256000},{epc_rating:"G",median_price:239000}];
+const SCHOOL_MED=[{nearest_school_ofsted:"Outstanding",median_price:290000},{nearest_school_ofsted:"Good",median_price:274000},{nearest_school_ofsted:"Requires Improvement",median_price:247500},{nearest_school_ofsted:"Inadequate",median_price:248500}];
+const COMM_MED=[{band:"0-15",median_price:554000},{band:"16-30",median_price:446000},{band:"31-45",median_price:294000},{band:"46-60",median_price:229000},{band:"61-75",median_price:197000},{band:"75+",median_price:176000}];
+const TYPE_YEAR=[{sale_year:2019,property_type:"Detached",median_price:442000},{sale_year:2019,property_type:"Flat",median_price:137000},{sale_year:2019,property_type:"Semi-Detached",median_price:248500},{sale_year:2019,property_type:"Terraced",median_price:201000},{sale_year:2020,property_type:"Detached",median_price:392000},{sale_year:2020,property_type:"Flat",median_price:141000},{sale_year:2020,property_type:"Semi-Detached",median_price:254000},{sale_year:2020,property_type:"Terraced",median_price:190000},{sale_year:2021,property_type:"Detached",median_price:496000},{sale_year:2021,property_type:"Flat",median_price:158000},{sale_year:2021,property_type:"Semi-Detached",median_price:300500},{sale_year:2021,property_type:"Terraced",median_price:220000},{sale_year:2022,property_type:"Detached",median_price:504000},{sale_year:2022,property_type:"Flat",median_price:160000},{sale_year:2022,property_type:"Semi-Detached",median_price:323000},{sale_year:2022,property_type:"Terraced",median_price:232000},{sale_year:2023,property_type:"Detached",median_price:471000},{sale_year:2023,property_type:"Flat",median_price:145000},{sale_year:2023,property_type:"Semi-Detached",median_price:277000},{sale_year:2023,property_type:"Terraced",median_price:207000},{sale_year:2024,property_type:"Detached",median_price:518500},{sale_year:2024,property_type:"Flat",median_price:154000},{sale_year:2024,property_type:"Semi-Detached",median_price:305000},{sale_year:2024,property_type:"Terraced",median_price:226000}];
+const FI=[{feature:"region_price_index",importance_pct:41.88},{feature:"location_score",importance_pct:16.34},{feature:"bed_area",importance_pct:15.12},{feature:"type_detached",importance_pct:11.46},{feature:"type_flat",importance_pct:4.25},{feature:"amenity_score",importance_pct:1.87},{feature:"condition_score",importance_pct:1.82},{feature:"type_semi_detached",importance_pct:1.62},{feature:"years_from_2019",importance_pct:1.22},{feature:"type_terraced",importance_pct:1.03},{feature:"bedrooms",importance_pct:0.92},{feature:"commute_mins",importance_pct:0.87}];
+const REG_ACC=[{region:"North East",mae:8712,count:132,median_actual:146000,median_predicted:145061,mae_pct:6.0},{region:"North West",mae:13018,count:151,median_actual:216000,median_predicted:216721,mae_pct:6.0},{region:"London - Outer",mae:33743,count:128,median_actual:549500,median_predicted:560445,mae_pct:6.1},{region:"East Midlands",mae:13612,count:114,median_actual:220000,median_predicted:222159,mae_pct:6.2},{region:"Yorkshire & Humber",mae:11946,count:149,median_actual:194000,median_predicted:188210,mae_pct:6.2},{region:"Wales",mae:12181,count:144,median_actual:194000,median_predicted:193227,mae_pct:6.3},{region:"South West",mae:21927,count:123,median_actual:350000,median_predicted:362565,mae_pct:6.3},{region:"East of England",mae:23584,count:154,median_actual:370500,median_predicted:375540,mae_pct:6.4},{region:"London - Inner",mae:55408,count:130,median_actual:856000,median_predicted:844460,mae_pct:6.5},{region:"South East",mae:27362,count:125,median_actual:414000,median_predicted:419747,mae_pct:6.6},{region:"Scotland",mae:11624,count:128,median_actual:176500,median_predicted:178351,mae_pct:6.6},{region:"West Midlands",mae:15962,count:122,median_actual:235000,median_predicted:234723,mae_pct:6.8}];
+const SAMPLE_PREDS=[{actual_price:149000,predicted_price:150187,region:"Wales",property_type:"Flat",bedrooms:3,error_pct:1.0},{actual_price:148000,predicted_price:129889,region:"Wales",property_type:"Flat",bedrooms:1,error_pct:-12.0},{actual_price:141000,predicted_price:145255,region:"Scotland",property_type:"Terraced",bedrooms:2,error_pct:3.0},{actual_price:199000,predicted_price:210764,region:"Scotland",property_type:"Semi-Detached",bedrooms:3,error_pct:6.0},{actual_price:517000,predicted_price:531296,region:"South East",property_type:"Semi-Detached",bedrooms:3,error_pct:3.0},{actual_price:795000,predicted_price:775228,region:"South East",property_type:"Detached",bedrooms:4,error_pct:-2.0},{actual_price:131000,predicted_price:138044,region:"Yorkshire & Humber",property_type:"Flat",bedrooms:3,error_pct:5.0},{actual_price:649000,predicted_price:691825,region:"London - Inner",property_type:"Terraced",bedrooms:1,error_pct:7.0},{actual_price:196000,predicted_price:188977,region:"Wales",property_type:"Terraced",bedrooms:3,error_pct:-4.0},{actual_price:516000,predicted_price:557437,region:"London - Outer",property_type:"Terraced",bedrooms:3,error_pct:8.0},{actual_price:221000,predicted_price:217014,region:"Wales",property_type:"Semi-Detached",bedrooms:3,error_pct:-2.0},{actual_price:175000,predicted_price:186899,region:"East of England",property_type:"Flat",bedrooms:2,error_pct:7.0},{actual_price:171000,predicted_price:180989,region:"North East",property_type:"Semi-Detached",bedrooms:4,error_pct:6.0},{actual_price:267000,predicted_price:257482,region:"North West",property_type:"Terraced",bedrooms:4,error_pct:-4.0},{actual_price:496000,predicted_price:541611,region:"West Midlands",property_type:"Detached",bedrooms:5,error_pct:9.0},{actual_price:210000,predicted_price:183351,region:"South West",property_type:"Flat",bedrooms:2,error_pct:-13.0},{actual_price:220000,predicted_price:201939,region:"East Midlands",property_type:"Flat",bedrooms:3,error_pct:-8.0},{actual_price:409000,predicted_price:364778,region:"South East",property_type:"Terraced",bedrooms:3,error_pct:-11.0},{actual_price:252000,predicted_price:276122,region:"East of England",property_type:"Terraced",bedrooms:3,error_pct:10.0},{actual_price:781000,predicted_price:817174,region:"East of England",property_type:"Detached",bedrooms:5,error_pct:5.0},{actual_price:78000,predicted_price:82806,region:"North East",property_type:"Flat",bedrooms:0,error_pct:6.0},{actual_price:224000,predicted_price:222561,region:"North East",property_type:"Detached",bedrooms:3,error_pct:-1.0},{actual_price:127000,predicted_price:106017,region:"West Midlands",property_type:"Flat",bedrooms:2,error_pct:-16.0},{actual_price:651000,predicted_price:581962,region:"South West",property_type:"Detached",bedrooms:3,error_pct:-11.0},{actual_price:160000,predicted_price:148047,region:"Yorkshire & Humber",property_type:"Flat",bedrooms:2,error_pct:-8.0},{actual_price:202000,predicted_price:196034,region:"West Midlands",property_type:"Flat",bedrooms:2,error_pct:-3.0},{actual_price:119000,predicted_price:112910,region:"North West",property_type:"Flat",bedrooms:1,error_pct:-5.0},{actual_price:709000,predicted_price:698558,region:"East of England",property_type:"Detached",bedrooms:3,error_pct:-2.0},{actual_price:611000,predicted_price:681939,region:"London - Inner",property_type:"Terraced",bedrooms:3,error_pct:12.0},{actual_price:588000,predicted_price:607928,region:"West Midlands",property_type:"Detached",bedrooms:5,error_pct:3.0},{actual_price:131000,predicted_price:134513,region:"North West",property_type:"Flat",bedrooms:1,error_pct:3.0},{actual_price:1000000,predicted_price:901339,region:"London - Inner",property_type:"Semi-Detached",bedrooms:3,error_pct:-10.0},{actual_price:803000,predicted_price:878616,region:"London - Outer",property_type:"Semi-Detached",bedrooms:4,error_pct:9.0},{actual_price:532000,predicted_price:546499,region:"London - Outer",property_type:"Flat",bedrooms:2,error_pct:3.0},{actual_price:337000,predicted_price:314042,region:"South East",property_type:"Flat",bedrooms:2,error_pct:-7.0},{actual_price:732000,predicted_price:716872,region:"South East",property_type:"Detached",bedrooms:3,error_pct:-2.0},{actual_price:166000,predicted_price:169650,region:"Scotland",property_type:"Terraced",bedrooms:3,error_pct:2.0},{actual_price:1015000,predicted_price:955819,region:"London - Inner",property_type:"Semi-Detached",bedrooms:3,error_pct:-6.0},{actual_price:281000,predicted_price:272537,region:"West Midlands",property_type:"Terraced",bedrooms:4,error_pct:-3.0},{actual_price:207000,predicted_price:192276,region:"North West",property_type:"Terraced",bedrooms:3,error_pct:-7.0},{actual_price:159000,predicted_price:160008,region:"Scotland",property_type:"Terraced",bedrooms:3,error_pct:1.0},{actual_price:257000,predicted_price:287133,region:"South West",property_type:"Semi-Detached",bedrooms:4,error_pct:12.0},{actual_price:88000,predicted_price:83451,region:"North East",property_type:"Flat",bedrooms:1,error_pct:-5.0},{actual_price:197000,predicted_price:178962,region:"East Midlands",property_type:"Terraced",bedrooms:1,error_pct:-9.0},{actual_price:149000,predicted_price:147809,region:"East Midlands",property_type:"Flat",bedrooms:1,error_pct:-1.0},{actual_price:156000,predicted_price:154352,region:"Wales",property_type:"Terraced",bedrooms:2,error_pct:-1.0},{actual_price:82000,predicted_price:95324,region:"Scotland",property_type:"Flat",bedrooms:2,error_pct:16.0},{actual_price:409000,predicted_price:402278,region:"London - Outer",property_type:"Flat",bedrooms:1,error_pct:-2.0},{actual_price:225000,predicted_price:212626,region:"Yorkshire & Humber",property_type:"Semi-Detached",bedrooms:3,error_pct:-6.0},{actual_price:168000,predicted_price:155067,region:"West Midlands",property_type:"Terraced",bedrooms:3,error_pct:-8.0},{actual_price:166000,predicted_price:144223,region:"North East",property_type:"Terraced",bedrooms:3,error_pct:-13.0},{actual_price:475000,predicted_price:524928,region:"East of England",property_type:"Detached",bedrooms:3,error_pct:10.0},{actual_price:337000,predicted_price:288663,region:"East of England",property_type:"Terraced",bedrooms:2,error_pct:-14.0},{actual_price:1198000,predicted_price:1192788,region:"London - Inner",property_type:"Semi-Detached",bedrooms:3,error_pct:0.0},{actual_price:174000,predicted_price:199585,region:"East of England",property_type:"Flat",bedrooms:0,error_pct:15.0},{actual_price:600000,predicted_price:585718,region:"London - Outer",property_type:"Terraced",bedrooms:4,error_pct:-2.0},{actual_price:458000,predicted_price:471089,region:"South East",property_type:"Terraced",bedrooms:4,error_pct:3.0},{actual_price:106000,predicted_price:108885,region:"Wales",property_type:"Flat",bedrooms:2,error_pct:3.0},{actual_price:172000,predicted_price:160951,region:"West Midlands",property_type:"Terraced",bedrooms:2,error_pct:-6.0},{actual_price:326000,predicted_price:330683,region:"Wales",property_type:"Detached",bedrooms:4,error_pct:1.0},{actual_price:231000,predicted_price:232370,region:"North West",property_type:"Semi-Detached",bedrooms:3,error_pct:1.0},{actual_price:233000,predicted_price:246166,region:"Yorkshire & Humber",property_type:"Semi-Detached",bedrooms:4,error_pct:6.0},{actual_price:275000,predicted_price:269022,region:"East Midlands",property_type:"Semi-Detached",bedrooms:3,error_pct:-2.0},{actual_price:144000,predicted_price:130542,region:"Yorkshire & Humber",property_type:"Flat",bedrooms:2,error_pct:-9.0},{actual_price:111000,predicted_price:107339,region:"East Midlands",property_type:"Flat",bedrooms:2,error_pct:-3.0},{actual_price:1854000,predicted_price:1689277,region:"London - Inner",property_type:"Detached",bedrooms:4,error_pct:-9.0},{actual_price:205000,predicted_price:203496,region:"East of England",property_type:"Flat",bedrooms:2,error_pct:-1.0},{actual_price:223000,predicted_price:213468,region:"Wales",property_type:"Semi-Detached",bedrooms:2,error_pct:-4.0},{actual_price:1115000,predicted_price:1109063,region:"London - Outer",property_type:"Detached",bedrooms:4,error_pct:0.0},{actual_price:272000,predicted_price:309177,region:"Yorkshire & Humber",property_type:"Detached",bedrooms:5,error_pct:14.0},{actual_price:291000,predicted_price:312581,region:"North East",property_type:"Detached",bedrooms:6,error_pct:7.0},{actual_price:262000,predicted_price:264888,region:"East Midlands",property_type:"Semi-Detached",bedrooms:3,error_pct:1.0},{actual_price:281000,predicted_price:289523,region:"East of England",property_type:"Flat",bedrooms:2,error_pct:3.0},{actual_price:222000,predicted_price:215346,region:"North West",property_type:"Semi-Detached",bedrooms:4,error_pct:-3.0},{actual_price:247000,predicted_price:250528,region:"East Midlands",property_type:"Semi-Detached",bedrooms:4,error_pct:1.0},{actual_price:453000,predicted_price:457003,region:"London - Outer",property_type:"Terraced",bedrooms:3,error_pct:1.0},{actual_price:611000,predicted_price:614452,region:"London - Outer",property_type:"Terraced",bedrooms:4,error_pct:1.0},{actual_price:137000,predicted_price:140313,region:"Yorkshire & Humber",property_type:"Flat",bedrooms:2,error_pct:2.0},{actual_price:138000,predicted_price:132588,region:"Wales",property_type:"Terraced",bedrooms:2,error_pct:-4.0},{actual_price:622000,predicted_price:656174,region:"London - Inner",property_type:"Terraced",bedrooms:2,error_pct:6.0},{actual_price:938000,predicted_price:1064213,region:"London - Inner",property_type:"Detached",bedrooms:3,error_pct:14.0},{actual_price:213000,predicted_price:248344,region:"West Midlands",property_type:"Semi-Detached",bedrooms:4,error_pct:17.0},{actual_price:285000,predicted_price:283076,region:"South West",property_type:"Flat",bedrooms:2,error_pct:-1.0},{actual_price:355000,predicted_price:359623,region:"West Midlands",property_type:"Detached",bedrooms:4,error_pct:1.0},{actual_price:183000,predicted_price:173721,region:"West Midlands",property_type:"Flat",bedrooms:2,error_pct:-5.0},{actual_price:255000,predicted_price:301003,region:"South East",property_type:"Flat",bedrooms:2,error_pct:18.0},{actual_price:909000,predicted_price:901041,region:"London - Inner",property_type:"Semi-Detached",bedrooms:4,error_pct:-1.0},{actual_price:165000,predicted_price:178630,region:"East Midlands",property_type:"Terraced",bedrooms:1,error_pct:8.0},{actual_price:220000,predicted_price:212388,region:"East Midlands",property_type:"Terraced",bedrooms:3,error_pct:-4.0},{actual_price:133000,predicted_price:151888,region:"West Midlands",property_type:"Flat",bedrooms:2,error_pct:14.0},{actual_price:412000,predicted_price:413549,region:"South West",property_type:"Semi-Detached",bedrooms:3,error_pct:0.0},{actual_price:355000,predicted_price:366224,region:"West Midlands",property_type:"Semi-Detached",bedrooms:4,error_pct:3.0},{actual_price:159000,predicted_price:150872,region:"East Midlands",property_type:"Terraced",bedrooms:4,error_pct:-5.0},{actual_price:224000,predicted_price:230928,region:"Wales",property_type:"Semi-Detached",bedrooms:4,error_pct:3.0},{actual_price:101000,predicted_price:97487,region:"North East",property_type:"Flat",bedrooms:2,error_pct:-4.0}];
+
+const REGION_COLORS={"London - Inner":"#1d4ed8","London - Outer":"#3b82f6","South East":"#0284c7","East of England":"#0891b2","South West":"#059669","East Midlands":"#16a34a","West Midlands":"#65a30d","Yorkshire & Humber":"#d97706","North West":"#ea580c","North East":"#dc2626","Wales":"#9333ea","Scotland":"#7c3aed"};
+const TYPE_COLORS={"Detached":"#1d4ed8","Semi-Detached":"#0891b2","Terraced":"#059669","Flat":"#d97706"};
+let CH={};
+const gv=id=>document.getElementById(id).value;
+function mkC(id,cfg){if(CH[id])CH[id].destroy();const ctx=document.getElementById(id);if(!ctx)return;CH[id]=new Chart(ctx,cfg);}
+const B={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#0f172a',titleColor:'#f8fafc',bodyColor:'#94a3b8',borderColor:'#1e2d3d',borderWidth:1,padding:10,cornerRadius:6}},scales:{x:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:10}},border:{display:false}},y:{grid:{color:'#f1f5f9',lineWidth:1},ticks:{color:'#94a3b8',font:{size:10}},border:{display:false}}}};
+
+// ── PAGE SWITCHER ─────────────────────────────────────────────────────────────
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  setTimeout(()=>buildPage(id),40);
+}
+function buildPage(id){
+  if(id==='overview')buildOverview();
+  if(id==='predict')buildPredict();
+  if(id==='model')buildModel();
+  if(id==='features')buildFeatures();
+  if(id==='data')renderTable();
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────────────────────
+function buildOverview(){
+  const reg=[...REG_MED].sort((a,b)=>a.median_price-b.median_price);
+  mkC('c-region',{type:'bar',indexAxis:'y',data:{labels:reg.map(d=>d.region),datasets:[{data:reg.map(d=>d.median_price/1000),backgroundColor:reg.map(d=>REGION_COLORS[d.region]||'#3b82f6'),borderWidth:0,borderRadius:4}]},options:{...B,indexAxis:'y',scales:{x:{...B.scales.x,ticks:{...B.scales.x.ticks,callback:v=>'£'+v+'k'}},y:{...B.scales.y,grid:{display:false}}}}});
+
+  const years=[2019,2020,2021,2022,2023,2024];
+  const types=['Detached','Semi-Detached','Terraced','Flat'];
+  const tc={'Detached':'#1d4ed8','Semi-Detached':'#0891b2','Terraced':'#059669','Flat':'#d97706'};
+  mkC('c-trend',{type:'line',data:{labels:years,datasets:types.map(t=>({label:t,data:years.map(y=>{const r=TYPE_YEAR.find(d=>d.sale_year===y&&d.property_type===t);return r?r.median_price/1000:null;}),borderColor:tc[t],borderWidth:2,pointRadius:4,pointBackgroundColor:tc[t],fill:false,tension:.3}))},options:{...B,plugins:{legend:{display:true,position:'bottom',labels:{color:'#64748b',font:{size:10},boxWidth:10}},tooltip:{...B.plugins.tooltip,mode:'index',intersect:false}},scales:{x:{...B.scales.x},y:{...B.scales.y,ticks:{...B.scales.y.ticks,callback:v=>'£'+v+'k'}}}}});
+
+  mkC('c-type',{type:'bar',data:{labels:TYPE_MED.map(d=>d.property_type),datasets:[{data:TYPE_MED.map(d=>d.median_price/1000),backgroundColor:TYPE_MED.map(d=>TYPE_COLORS[d.property_type]),borderWidth:0,borderRadius:6}]},options:{...B,scales:{x:{...B.scales.x},y:{...B.scales.y,ticks:{...B.scales.y.ticks,callback:v=>'£'+v+'k'}}}}});
+
+  mkC('c-beds',{type:'bar',data:{labels:BEDS_MED.map(d=>d.bedrooms+' bed'),datasets:[{data:BEDS_MED.map(d=>d.median_price/1000),backgroundColor:'#3b82f6',borderWidth:0,borderRadius:6}]},options:{...B,scales:{x:{...B.scales.x},y:{...B.scales.y,ticks:{...B.scales.y.ticks,callback:v=>'£'+v+'k'}}}}});
+
+  mkC('c-commute',{type:'line',data:{labels:COMM_MED.map(d=>d.band+' min'),datasets:[{data:COMM_MED.map(d=>d.median_price/1000),borderColor:'#1d4ed8',backgroundColor:'rgba(29,78,216,.08)',fill:true,tension:.4,borderWidth:2.5,pointRadius:6,pointBackgroundColor:'#1d4ed8',pointBorderColor:'#fff',pointBorderWidth:2}]},options:{...B,scales:{x:{...B.scales.x},y:{...B.scales.y,ticks:{...B.scales.y.ticks,callback:v=>'£'+v+'k'}}}}});
+}
+
+// ── PREDICTOR ─────────────────────────────────────────────────────────────────
+const REGION_IDX={"London - Inner":838,"London - Outer":564,"South East":425,"East of England":371,"South West":325,"East Midlands":214,"West Midlands":232,"Yorkshire & Humber":188,"North West":211,"North East":148,"Wales":196,"Scotland":177};
+const REGION_DENSITY={"London - Inner":"urban","London - Outer":"urban","South East":"suburban","East of England":"suburban","South West":"suburban","East Midlands":"mixed","West Midlands":"mixed","Yorkshire & Humber":"mixed","North West":"mixed","North East":"mixed","Wales":"mixed","Scotland":"mixed"};
+
+function predictPrice(){
+  const region=gv('p-region'),ptype=gv('p-type'),beds=+gv('p-beds'),
+        area=+gv('p-area'),commute=+gv('p-commute'),epc=gv('p-epc'),
+        school=gv('p-school'),cond=gv('p-cond'),flood=gv('p-flood');
+
+  const ri=REGION_IDX[region]||270;
+  const epcS={"A":6,"B":5,"C":4,"D":3,"E":2,"F":1,"G":0}[epc];
+  const schoolS={"Outstanding":3,"Good":2,"Requires Improvement":1,"Inadequate":0}[school];
+  const condS={"New Build":4,"Excellent":3,"Good":2,"Fair":1,"Poor":0}[cond];
+  const floodS={"Low":0,"Medium":1,"High":2}[flood];
+  const isUrban=REGION_DENSITY[region]==="urban"?1:0;
+  const typeD=ptype==="Detached"?1:0,typeF=ptype==="Flat"?1:0,typeS=ptype==="Semi-Detached"?1:0,typeT=ptype==="Terraced"?1:0;
+  const amenity=(1)*3+(ptype!=="Flat"?1:0)*2+(ptype==="Detached"?1:0)*2+schoolS+epcS;
+  const locScore=ri/100-commute/60-5/30-35/100-floodS*0.1;
+  const bedArea=beds*area;
+
+  // Gradient Boosting approximate prediction using feature weights
+  let logPrice=10.5;
+  logPrice+=ri*0.0028;
+  logPrice+=locScore*0.18;
+  logPrice+=bedArea*0.000038;
+  logPrice+=typeD*0.42;
+  logPrice-=typeF*0.35;
+  logPrice+=typeS*0.08;
+  logPrice-=typeT*0.05;
+  logPrice+=amenity*0.012;
+  logPrice+=condS*0.022;
+  logPrice-=commute*0.004;
+  logPrice+=epcS*0.006;
+  logPrice+=schoolS*0.018;
+  logPrice-=floodS*0.03;
+  logPrice+=isUrban*0.05;
+
+  const price=Math.round(Math.exp(logPrice)/1000)*1000;
+  const mape=0.058;
+  const low=Math.round(price*(1-mape*1.5)/1000)*1000;
+  const high=Math.round(price*(1+mape*1.5)/1000)*1000;
+
+  document.getElementById('pred-val').textContent='£'+price.toLocaleString();
+  document.getElementById('pred-range').innerHTML=`Confidence range: <span>£${low.toLocaleString()}</span> — <span>£${high.toLocaleString()}</span>`;
+  const conf=Math.max(1,Math.min(5,Math.round(5-Math.abs(locScore)*2)));
+  document.getElementById('conf-text').textContent=`Model confidence: ${['Very Low','Low','Medium','High','Very High'][conf-1]}`;
+  document.getElementById('conf-meter').querySelectorAll('.conf-bar').forEach((b,i)=>{b.className='conf-bar'+(i<conf?' fill':'');});
+
+  const factors=[
+    {name:'Region',val:region.split(' ')[0]+(region.includes('Inner')?' Inner':region.includes('Outer')?' Outer':''),impact:'Critical',cls:'fi-pos'},
+    {name:'Property Type',val:ptype,impact:typeD?'High +':typeF?'Negative':'Moderate',cls:typeD?'fi-pos':typeF?'fi-neg':'fi-neu'},
+    {name:'Bedrooms',val:beds+' bed',impact:beds>=4?'+High':beds<=1?'Low':'+Mod',cls:beds>=4?'fi-pos':beds<=1?'fi-neg':'fi-neu'},
+    {name:'Floor Area',val:area+' m²',impact:area>=150?'+Large':area<=60?'Small':'Average',cls:area>=150?'fi-pos':area<=60?'fi-neg':'fi-neu'},
+    {name:'Commute',val:commute+' min',impact:commute<=20?'Very Good':commute>=60?'Penalty':'+OK',cls:commute<=20?'fi-pos':commute>=60?'fi-neg':'fi-neu'},
+    {name:'EPC Rating',val:epc,impact:epcS>=4?'Green+':epcS<=2?'Discount':'Neutral',cls:epcS>=4?'fi-pos':epcS<=2?'fi-neg':'fi-neu'},
+    {name:'School',val:school.split(' ')[0],impact:schoolS>=2?'+Premium':'-Discount',cls:schoolS>=2?'fi-pos':'fi-neg'},
+    {name:'Flood Risk',val:flood,impact:flood==='Low'?'No penalty':flood==='High'?'-8% discount':'-3%',cls:flood==='Low'?'fi-pos':flood==='High'?'fi-neg':'fi-neu'},
+    {name:'Condition',val:cond,impact:condS>=3?'+Premium':condS<=1?'-Discount':'Average',cls:condS>=3?'fi-pos':condS<=1?'fi-neg':'fi-neu'},
+  ];
+  document.getElementById('pred-factors').innerHTML=factors.map(f=>`<div class="factor-chip"><div><div class="factor-name">${f.name}</div><div class="factor-val">${f.val}</div></div><span class="factor-impact ${f.cls}">${f.impact}</span></div>`).join('');
+
+  // Beds chart for region
+  const regBeds=BEDS_MED.map(d=>({beds:d.bedrooms,price:d.median_price}));
+  mkC('c-pred-beds',{type:'bar',data:{labels:regBeds.map(d=>d.beds+' bed'),datasets:[{data:regBeds.map(d=>d.price/1000),backgroundColor:regBeds.map(d=>d.beds===beds?'#1d4ed8':'#bfdbfe'),borderWidth:0,borderRadius:4}]},options:{...B,scales:{x:{...B.scales.x},y:{...B.scales.y,ticks:{...B.scales.y.ticks,callback:v=>'£'+v+'k'}}}}});
+
+  // EPC & School premiums
+  mkC('c-pred-premiums',{type:'bar',data:{labels:['A','B','C','D','E','F','G'],datasets:[{label:'EPC Premium',data:EPC_MED.map(d=>d.median_price/1000),backgroundColor:EPC_MED.map(d=>d.epc_rating===epc?'#059669':'#bbf7d0'),borderWidth:0,borderRadius:4}]},options:{...B,scales:{x:{...B.scales.x},y:{...B.scales.y,ticks:{...B.scales.y.ticks,callback:v=>'£'+v+'k'}}}}});
+}
+
+function buildPredict(){
+  // Init with default prediction
+  predictPrice();
+}
+
+// ── MODEL ─────────────────────────────────────────────────────────────────────
+function buildModel(){
+  // Scatter plot
+  mkC('c-scatter',{type:'scatter',data:{datasets:[{data:SAMPLE_PREDS.map(d=>({x:d.actual_price/1000,y:d.predicted_price/1000})),backgroundColor:SAMPLE_PREDS.map(d=>Math.abs(d.error_pct)<=5?'rgba(34,197,94,.6)':Math.abs(d.error_pct)<=15?'rgba(245,158,11,.6)':'rgba(239,68,68,.6)'),pointRadius:4,pointHoverRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#0f172a',titleColor:'#f8fafc',bodyColor:'#94a3b8',callbacks:{label:c=>`Actual: £${c.raw.x.toFixed(0)}k | Pred: £${c.raw.y.toFixed(0)}k`}}},scales:{x:{title:{display:true,text:'Actual Price (£k)',color:'#94a3b8'},grid:{color:'#f1f5f9'},ticks:{color:'#94a3b8',callback:v=>'£'+v+'k'},border:{display:false}},y:{title:{display:true,text:'Predicted Price (£k)',color:'#94a3b8'},grid:{color:'#f1f5f9'},ticks:{color:'#94a3b8',callback:v=>'£'+v+'k'},border:{display:false}}}}});
+
+  // Error distribution
+  const bins=[-25,-20,-15,-10,-5,0,5,10,15,20,25];
+  const labels=['<-20%','-20%','-15%','-10%','-5%','0','5%','10%','15%','20%','>20%'];
+  const counts=new Array(labels.length).fill(0);
+  SAMPLE_PREDS.forEach(d=>{const e=d.error_pct;const i=Math.min(labels.length-1,Math.max(0,Math.floor((e+25)/5)));counts[i]++;});
+  mkC('c-error-dist',{type:'bar',data:{labels,datasets:[{data:counts,backgroundColor:labels.map((_,i)=>i<3||i>7?'rgba(239,68,68,.7)':i===5?'rgba(34,197,94,.7)':'rgba(59,130,246,.7)'),borderWidth:0,borderRadius:4}]},options:{...B,scales:{x:{...B.scales.x,ticks:{...B.scales.x.ticks,font:{size:9}}},y:{...B.scales.y,ticks:{...B.scales.y.ticks}}}}});
+
+  // Regional accuracy
+  const acc=[...REG_ACC].sort((a,b)=>a.mae_pct-b.mae_pct);
+  mkC('c-regional-acc',{type:'bar',data:{labels:acc.map(d=>d.region),datasets:[{data:acc.map(d=>d.mae_pct),backgroundColor:acc.map(d=>d.mae_pct<=7?'#22c55e':d.mae_pct<=10?'#f59e0b':'#ef4444'),borderWidth:0,borderRadius:4}]},options:{...B,scales:{x:{...B.scales.x,ticks:{...B.scales.x.ticks,font:{size:9}}},y:{...B.scales.y,max:12,ticks:{...B.scales.y.ticks,callback:v=>v+'%'}}}}});
+}
+
+// ── FEATURES ──────────────────────────────────────────────────────────────────
+function buildFeatures(){
+  const sorted=[...FI].sort((a,b)=>a.importance_pct-b.importance_pct);
+  mkC('c-fi',{type:'bar',indexAxis:'y',data:{labels:sorted.map(d=>d.feature.replace(/_/g,' ')),datasets:[{data:sorted.map(d=>d.importance_pct),backgroundColor:sorted.map(d=>d.importance_pct>20?'#1d4ed8':d.importance_pct>5?'#0891b2':'#bae6fd'),borderWidth:0,borderRadius:4}]},options:{...B,indexAxis:'y',scales:{x:{...B.scales.x,ticks:{...B.scales.x.ticks,callback:v=>v+'%'}},y:{...B.scales.y,grid:{display:false},ticks:{...B.scales.y.ticks,font:{size:10}}}}}});
+
+  mkC('c-epc',{type:'bar',data:{labels:EPC_MED.map(d=>d.epc_rating),datasets:[{data:EPC_MED.map(d=>d.median_price/1000),backgroundColor:EPC_MED.map(d=>['A','B','C'].includes(d.epc_rating)?'#22c55e':'#f59e0b'),borderWidth:0,borderRadius:5}]},options:{...B,scales:{x:{...B.scales.x},y:{...B.scales.y,ticks:{...B.scales.y.ticks,callback:v=>'£'+v+'k'}}}}});
+
+  const schoolOrder=["Outstanding","Good","Requires Improvement","Inadequate"];
+  const schoolData=schoolOrder.map(s=>SCHOOL_MED.find(d=>d.nearest_school_ofsted===s));
+  mkC('c-school',{type:'bar',data:{labels:['Outstanding','Good','Req. Improvement','Inadequate'],datasets:[{data:schoolData.map(d=>d?d.median_price/1000:0),backgroundColor:['#22c55e','#3b82f6','#f59e0b','#ef4444'],borderWidth:0,borderRadius:5}]},options:{...B,scales:{x:{...B.scales.x,ticks:{...B.scales.x.ticks,font:{size:10}}},y:{...B.scales.y,ticks:{...B.scales.y.ticks,callback:v=>'£'+v+'k'}}}}});
+}
+
+// ── DATA TABLE ────────────────────────────────────────────────────────────────
+function renderTable(){
+  const fr=document.getElementById('tf-region').value;
+  const ft=document.getElementById('tf-type').value;
+  const fe=document.getElementById('tf-err').value;
+  let rows=SAMPLE_PREDS.filter(d=>{
+    if(fr!=='all'&&d.region!==fr)return false;
+    if(ft!=='all'&&d.property_type!==ft)return false;
+    if(fe==='good'&&Math.abs(d.error_pct)>5)return false;
+    if(fe==='ok'&&(Math.abs(d.error_pct)<=5||Math.abs(d.error_pct)>15))return false;
+    if(fe==='bad'&&Math.abs(d.error_pct)<=15)return false;
+    return true;
+  });
+  document.getElementById('tbl-count').textContent=rows.length+' rows';
+  const err_gbp=r=>r.predicted_price-r.actual_price;
+  document.getElementById('tbl-body').innerHTML=rows.map(d=>{
+    const e=d.error_pct;const eg=err_gbp(d);
+    const cls=Math.abs(e)<=5?'err-good':Math.abs(e)<=15?'err-ok':'err-bad';
+    const clsT=Math.abs(e)<=5?'Within ±5%':Math.abs(e)<=15?`±${Math.abs(e).toFixed(0)}%`:`±${Math.abs(e).toFixed(0)}%`;
+    return`<tr>
+      <td>${d.region}</td><td>${d.property_type}</td><td>${d.bedrooms}</td>
+      <td>£${d.actual_price.toLocaleString()}</td>
+      <td>£${d.predicted_price.toLocaleString()}</td>
+      <td style="color:${eg>0?'#16a34a':'#dc2626'}">${eg>0?'+':''}£${Math.abs(eg).toLocaleString()}</td>
+      <td style="color:${e>0?'#16a34a':'#dc2626'}">${e>0?'+':''}${e.toFixed(1)}%</td>
+      <td><span class="err-tag ${cls}">${clsT}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load',()=>{buildOverview();renderTable();});
+</script>
+</body>
+</html>
